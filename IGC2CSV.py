@@ -100,7 +100,7 @@ def logline_H(line, flight):
   try:
     headertypes[line[1:5]](line[5:], flight)
   except KeyError:
-    print "Header (not implemented): {}".format(line[1:])
+    print ("Header (not implemented): " + format(line[1:]))
   return
 
 # Flight date header. This is the date that the FIRST B record was made on
@@ -108,7 +108,7 @@ def logline_H(line, flight):
 # (did we learn nothing from Y2K?)
 def logline_H_FDTE(line, flight):
   flight['flightdate'] = datetime.date(int(line[4:6])+2000, int(line[2:4]), int(line[0:2]))
-  print "Flight date: {}".format(flight['flightdate'])
+  print("Flight date: " + format(flight['flightdate']))
 
 
 def logline_I(line, flight):
@@ -127,13 +127,13 @@ def logline_B(line, flight):
     'pressure'  : int(line[25:30]),
     'alt-GPS'   : int(line[30:35]),
   })
-  for key, record in flight['optional_records'].iteritems():
+  for key, record in flight['optional_records'].items():
     flight['fixrecords'][-1]['opt_' +  key.lower()] = line[record[0]:record[1]]
 
   return
 
 def logline_NotImplemented(line, flight):
-  print "Record Type {} not implemented: {}".format(line[0:1], line[1:])
+  print ("Record Type " + format(line[0:1]) + " not implemented: " + line[1:])
   return
 
   
@@ -205,9 +205,18 @@ def get_output_filename(inputfilename):
   return outputfilename
 
 if __name__ == "__main__":
-  print "Number of arguments: {}".format(len(sys.argv))
-  print "Argument List: {}".format(str(sys.argv))
+  csv_sep = ','
+  csv_dp = '.'
 
+  if len(sys.argv) == 2:
+    #print("Number of arguments: " + format(len(sys.argv)))
+    #print("Argument List: " + format(str(sys.argv)))
+    fileparam = sys.argv[1]
+  else:
+    fileparam = input("Filename (e.g. test.igc) or directory (e.g. C:\igcs\): ")
+    csv_sep = input("Column separator (e.g. ','): ")
+    csv_dp = input("Decimal point (e.g. '.'): ")
+    
   defaultoutputfields = [
     ('Datetime (UTC)', 'record', 'datetime'),
     ('Elapsed Time', 'record', 'running_time'),
@@ -229,10 +238,9 @@ if __name__ == "__main__":
 
   logbook = []
 
-  fileparam = sys.argv[1]
   if os.path.isfile(fileparam):
     logbook.append({'igcfile': os.path.abspath(fileparam)})
-    print "Single IGC file supplied: {}".format(logbook[-1]['igcfile'])
+    print("Single IGC file supplied: " + format(logbook[-1]['igcfile']))
   elif os.path.isdir(fileparam):
     for filename in os.listdir(fileparam):
       fileabs = os.path.join(fileparam, filename)
@@ -243,10 +251,10 @@ if __name__ == "__main__":
       if ext.lower() == '.igc'.lower():
         logbook.append({'igcfile': os.path.abspath(fileabs)})
   else:
-    print 'Must indicate a file or directory to process'
+    print('Must indicate a file or directory to process')
     exit()
 
-  print "{} flights ready to process...".format(len(logbook))
+  print(format(len(logbook)) + " flights ready to process...")
 
   # Parse all files
   for flight in logbook:
@@ -268,14 +276,16 @@ if __name__ == "__main__":
 
     header = ''
     for field in outputfields:
-      header += field[0] + ','
+      header += field[0] + csv_sep
     output.write(header[:-1] + '\n')
 
     for record in flight['fixrecords']:
       recordline = ''
       for field in outputfields:
         if field[1] == 'record':
-          recordline += str(record[field[2]]) + ','
+          recordline += str(record[field[2]]) + csv_sep
         elif field[1] == 'flight':
-          recordline += str(flight[field[2]]) + ','
-      output.write(recordline[:-1] + '\n')
+          recordline += ('%.6f' % flight[field[2]]) + csv_sep
+      output.write(recordline[:-1].replace('.', ',') + '\n')
+
+    output.close()
