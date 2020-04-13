@@ -1,3 +1,5 @@
+![](<https://img.shields.io/badge/python-3.7.3-brightgreen.svg>)
+
 # IGC2CSV
 Reads an IGC file (a flight log used very commonly in hang gliding and paragliding) and spits out a CSV file with the flight data.
 
